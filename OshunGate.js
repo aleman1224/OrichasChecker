@@ -1,7 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api';
 import fs from 'fs';
 import path from 'path';
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-firefox';
 import { faker } from '@faker-js/faker';
 import { Live } from './models/Live.js';
 
@@ -92,27 +92,20 @@ OshunGate
             });
         }
         console.log('Iniciando simulador...');
-        const chromePath = process.env.CHROME_PATH || findChromePath();
-        if (!chromePath) {
-            throw new Error('No se pudo encontrar Chrome instalado');
-        }
-        console.log('Usando Chrome en:', chromePath);
 
         try {
             this.browser = await puppeteer.launch({
                 headless: "new",
                 defaultViewport: null,
-                executablePath: chromePath,
                 timeout: 4000,
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage',
                     '--disable-gpu',
-                    '--window-size=1366,768',
-                    '--disable-web-security',
-                    '--incognito'
-                ]
+                    '--window-size=1366,768'
+                ],
+                product: 'firefox'
             });
 
             const pages = await this.browser.pages();
