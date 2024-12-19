@@ -213,7 +213,7 @@ export class ElegbaGateChecker {
                     '--window-size=1920,1080',
                     '--incognito'
                 ],
-                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome'
+                executablePath: process.env.CHROME_PATH || '/usr/bin/google-chrome'
             };
 
             console.log('📦 Configurando opciones de lanzamiento:', JSON.stringify(launchOptions));
@@ -745,7 +745,7 @@ export class ElegbaGateChecker {
                     break;
                 case 'DEAD':
                     await fs.promises.appendFile(this.files.dead, resultado);
-                    console.log('💳 Guardado en dead.txt');
+                    console.log('��� Guardado en dead.txt');
                     break;
             }
             await this.esperar(CONFIG.PAGO.POST_RESPUESTA);
