@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node main.js",
     "dev": "nodemon main.js",
-    "build": "echo 'No build required'",
+    "build": "npm install",
     "cleanup": "node cleanup-cards.js",
     "check-deploy": "node check-deploy.js"
   },
@@ -33,6 +33,6 @@
     "socket.io": "^4.7.2"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "20.x"
   }
 }
