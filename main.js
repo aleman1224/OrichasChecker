@@ -77,7 +77,7 @@ global.stopSignal = false;
 // Configuración de MongoDB con manejo de errores mejorado
 mongoose.set('strictQuery', false); // Suprimir la advertencia
 
-mongoose.connect('mongodb://alemanApp:ALEMAN1988@127.0.0.1:27017/alemanChecker?authSource=alemanChecker', {
+mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     serverSelectionTimeoutMS: 60000, // Aumentar a 60 segundos
