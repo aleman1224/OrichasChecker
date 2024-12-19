@@ -27,24 +27,29 @@ import { scheduleJob } from 'node-schedule';
 import { cleanupCards } from './cleanup-cards.js';
 
 // Cargar variables de entorno
+console.log('🚀 Iniciando aplicación...');
+
 config();
+console.log('✅ Variables de entorno cargadas');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+console.log('✅ Paths configurados');
 
 // Manejo de errores no capturados
 process.on('uncaughtException', (err) => {
-    console.error('Error no capturado:', err);
+    console.error('❌ Error no capturado:', err);
     process.exit(1);
 });
 
 process.on('unhandledRejection', (err) => {
-    console.error('Promesa rechazada no manejada:', err);
+    console.error('❌ Promesa rechazada no manejada:', err);
     process.exit(1);
 });
+console.log('✅ Manejadores de errores configurados');
 
 // Logs de depuración para variables de entorno
-console.log('Variables de entorno disponibles:', {
+console.log('📝 Variables de entorno disponibles:', {
     MONGODB_URI: process.env.MONGODB_URI ? 'Definida' : 'No definida',
     NODE_ENV: process.env.NODE_ENV,
     PORT: process.env.PORT
@@ -54,9 +59,14 @@ console.log('Variables de entorno disponibles:', {
 if (!process.env.ADMIN_KEY) {
     process.env.ADMIN_KEY = 'ALEMAN2024';
 }
+console.log('✅ Variables por defecto configuradas');
 
 const app = express();
+console.log('✅ Express inicializado');
+
 const server = createServer(app);
+console.log('✅ Servidor HTTP creado');
+
 const io = new Server(server, {
     cors: {
         origin: "*",
@@ -67,6 +77,7 @@ const io = new Server(server, {
     pingInterval: 25000,
     cookie: true
 });
+console.log('✅ Socket.IO configurado');
 
 global.io = io;
 const PORT = process.env.PORT || 10000;
