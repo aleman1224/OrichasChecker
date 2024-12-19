@@ -4,7 +4,9 @@ services:
     env: node
     runtime: node
     nodeVersion: 20.10.0
-    buildCommand: npm ci --only=production
+    buildCommand: |
+      npm cache clean --force
+      npm ci --only=production --no-optional
     startCommand: node main.js
     envVars:
       - key: NODE_ENV
