@@ -212,7 +212,8 @@ export class ElegbaGateChecker {
                     '--disable-gpu',
                     '--window-size=1920,1080',
                     '--incognito'
-                ]
+                ],
+                executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome'
             };
 
             console.log('📦 Configurando opciones de lanzamiento:', JSON.stringify(launchOptions));
@@ -846,7 +847,7 @@ async function main(userId) {
 
     while (global.checkerActivo) {
         try {
-            // Verificar señal de parada
+            // Verificar se��al de parada
             if (global.stopSignal) {
                 console.log('Señal de parada detectada, deteniendo proceso...');
                 if (checker && checker.browser) {
