@@ -29,9 +29,16 @@ import { cleanupCards } from './cleanup-cards.js';
 // Cargar variables de entorno
 config();
 
+// Logs de depuración para variables de entorno
+console.log('Variables de entorno disponibles:', {
+    MONGODB_URI: process.env.MONGODB_URI ? 'Definida' : 'No definida',
+    NODE_ENV: process.env.NODE_ENV,
+    PORT: process.env.PORT
+});
+
 // Si no existe en .env, establecer una por defecto
 if (!process.env.ADMIN_KEY) {
-    process.env.ADMIN_KEY = 'ALEMAN2024'; // Puedes cambiar esta clave
+    process.env.ADMIN_KEY = 'ALEMAN2024';
 }
 
 const app = express();
@@ -75,15 +82,12 @@ global.checkerActivo = false;
 global.stopSignal = false;
 
 // Configuración de MongoDB con manejo de errores mejorado
-mongoose.set('strictQuery', false); // Suprimir la advertencia
+mongoose.set('strictQuery', false);
 
-console.log('MongoDB URI:', process.env.MONGODB_URI); // Log para debug
+const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://alemancheck:ALEMAN1988@cluster0.er1x4.mongodb.net/alemanChecker?retryWrites=true&w=majority&appName=Cluster0';
+console.log('Intentando conectar a MongoDB con URI:', mongoUri);
 
-if (!process.env.MONGODB_URI) {
-    throw new Error('MONGODB_URI no está definida en las variables de entorno');
-}
-
-mongoose.connect(process.env.MONGODB_URI, {
+mongoose.connect(mongoUri, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
     serverSelectionTimeoutMS: 60000,
@@ -133,7 +137,7 @@ function actualizarDashboard(tipo, data) {
         mensaje: typeof data === 'string' ? data : JSON.stringify(data)
     };
     
-    console.log('Enviando actualización:', mensaje);
+    console.log('Enviando actualizaci��n:', mensaje);
     io.emit('update-dashboard', mensaje);
 }
 // 1. Primero los middlewares básicos
