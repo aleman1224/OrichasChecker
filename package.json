@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node main.js",
     "dev": "nodemon main.js",
-    "build": "npm install",
+    "build": "npm install --production",
+    "heroku-postbuild": "npm install --production=false",
     "cleanup": "node cleanup-cards.js",
     "check-deploy": "node check-deploy.js"
   },
@@ -29,7 +30,7 @@
     "node-fetch": "^3.3.2",
     "node-schedule": "^2.1.1",
     "node-telegram-bot-api": "^0.66.0",
-    "puppeteer": "^21.6.1",
+    "puppeteer-core": "^21.6.1",
     "socket.io": "^4.7.2"
   },
   "engines": {
