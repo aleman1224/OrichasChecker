@@ -77,10 +77,16 @@ global.stopSignal = false;
 // Configuración de MongoDB con manejo de errores mejorado
 mongoose.set('strictQuery', false); // Suprimir la advertencia
 
+console.log('MongoDB URI:', process.env.MONGODB_URI); // Log para debug
+
+if (!process.env.MONGODB_URI) {
+    throw new Error('MONGODB_URI no está definida en las variables de entorno');
+}
+
 mongoose.connect(process.env.MONGODB_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 60000, // Aumentar a 60 segundos
+    serverSelectionTimeoutMS: 60000,
     socketTimeoutMS: 60000,
     connectTimeoutMS: 60000,
     heartbeatFrequencyMS: 2000,
@@ -89,6 +95,9 @@ mongoose.connect(process.env.MONGODB_URI, {
     maxPoolSize: 10,
     keepAlive: true,
     keepAliveInitialDelay: 300000
+}).catch(err => {
+    console.error('Error al conectar a MongoDB:', err);
+    process.exit(1);
 });
 
 // Manejar eventos de conexión
