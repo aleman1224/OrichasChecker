@@ -57,7 +57,6 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
 };
 
 // Índices para mejorar el rendimiento
-userSchema.index({ username: 1 }, { unique: true });
 userSchema.index({ role: 1 });
 userSchema.index({ active: 1 });
 
