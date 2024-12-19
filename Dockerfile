@@ -2,15 +2,24 @@ FROM node:20-slim
 
 # Instalar dependencias necesarias
 RUN apt-get update \
-    && apt-get install -y wget gnupg \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && sh -c 'echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable \
-    fonts-ipafont-gothic fonts-wqy-zenhei fonts-thai-tlwg fonts-kacst fonts-freefont-ttf \
-    libxss1 libxtst6 libxrandr2 libasound2 libatk1.0-0 libatk-bridge2.0-0 libgtk-3-0 \
-    libgbm1 libnss3 libxss1 libx11-xcb1 libxcb1 libxcomposite1 libxcursor1 libxdamage1 \
-    libxext6 libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 \
+    && apt-get install -y \
+    firefox-esr \
+    xvfb \
+    libx11-xcb1 \
+    libxcomposite1 \
+    libxcursor1 \
+    libxdamage1 \
+    libxi6 \
+    libxtst6 \
+    libnss3 \
+    libcups2 \
+    libxss1 \
+    libxrandr2 \
+    libasound2 \
+    libpangocairo-1.0-0 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libgtk-3-0 \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /app/cards
@@ -38,12 +47,12 @@ RUN mkdir -p /app/cards && \
 # Establecer permisos
 RUN chmod -R 777 /app/cards
 
-# Variables de entorno para Chrome
-ENV CHROME_PATH=/usr/bin/google-chrome \
-    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+# Variables de entorno para Firefox
+ENV DISPLAY=:99 \
+    PUPPETEER_PRODUCT=firefox
 
 # Exponer el puerto
 EXPOSE 3000
 
-# Comando para iniciar la aplicación
-CMD ["npm", "start"] 
+# Script de inicio que configura Xvfb y luego inicia la aplicación
+CMD Xvfb :99 -screen 0 1024x768x16 & npm start 

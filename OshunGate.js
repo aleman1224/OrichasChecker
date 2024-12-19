@@ -1,7 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api';
 import fs from 'fs';
 import path from 'path';
-import puppeteer from 'puppeteer-firefox';
+import puppeteer from 'puppeteer';
 import { faker } from '@faker-js/faker';
 import { Live } from './models/Live.js';
 
@@ -97,15 +97,14 @@ OshunGate
             this.browser = await puppeteer.launch({
                 headless: "new",
                 defaultViewport: null,
-                timeout: 4000,
+                product: 'firefox',
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage',
                     '--disable-gpu',
                     '--window-size=1366,768'
-                ],
-                product: 'firefox'
+                ]
             });
 
             const pages = await this.browser.pages();
