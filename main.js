@@ -29,6 +29,9 @@ import { cleanupCards } from './cleanup-cards.js';
 // Cargar variables de entorno
 config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // Manejo de errores no capturados
 process.on('uncaughtException', (err) => {
     console.error('Error no capturado:', err);
@@ -66,7 +69,7 @@ const io = new Server(server, {
 });
 
 global.io = io;
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 // Configurar todas las rutas y middleware aquí...
 app.use(session({
@@ -833,7 +836,7 @@ const startServer = async () => {
         console.log('✅ Conexión a MongoDB establecida exitosamente');
 
         // Iniciar el servidor solo después de conectar a MongoDB
-        server.listen(PORT, () => {
+        server.listen(PORT, '0.0.0.0', () => {
             console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
         });
 
