@@ -2,11 +2,7 @@ services:
   - type: web
     name: OrishaChecker
     env: node
-    runtime: node
-    nodeVersion: 20.10.0
-    buildCommand: |
-      npm cache clean --force
-      npm ci --only=production --no-optional
+    buildCommand: npm install --production
     startCommand: node main.js
     envVars:
       - key: NODE_ENV
@@ -36,8 +32,16 @@ services:
     scaling:
       minInstances: 1
       maxInstances: 1
-      targetMemoryPercent: 80
-    headers:
-      - path: /*
-        name: X-Frame-Options
-        value: DENY
+    buildFilter:
+      paths:
+        - package.json
+        - package-lock.json
+        - main.js
+        - models/**/*.js
+        - utils.js
+        - logger.js
+        - ElegbaGate.js
+        - OshunGate.js
+        - health.js
+        - public/**/*
+        - assets/**/*
