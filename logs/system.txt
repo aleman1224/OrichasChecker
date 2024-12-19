@@ -1,0 +1,5 @@
+[18/12/2024, 22:46:48] Logs limpiados automáticamente después de 2 sesiones
+[18/12/2024, 22:46:49] SUCCESS: Servidor corriendo en http://localhost:3000
+[18/12/2024, 22:46:49] SUCCESS: Conectado a MongoDB
+[18/12/2024, 22:51:58] SUCCESS: Servidor corriendo en http://localhost:3000
+[18/12/2024, 22:51:58] SUCCESS: Conectado a MongoDB

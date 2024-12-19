@@ -1,0 +1,24 @@
+{
+    "name": "checker-project",
+    "version": "1.0.0",
+    "type": "module",
+    "scripts": {
+      "start": "nodemon main.js"
+    },
+    "nodemonConfig": {
+      "watch": ["main.js", "models", "ElegbaGate.js", "OshunGate.js"],
+      "ignore": ["logs", "node_modules", "public"],
+      "ext": "js,json"
+    },
+    "dependencies": {
+      "express": "^4.17.1",
+      "mongoose": "^5.10.9",
+      "request": "^2.88.2",
+      "socket.io": "^4.0.0",
+      "@faker-js/faker": "^7.6.0",
+      "puppeteer": "^19.0.0"
+    },
+    "devDependencies": {
+      "nodemon": "^2.0.7"
+    }
+  }

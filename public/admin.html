@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Panel de Administrador</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+            color: #FFD700;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            padding: 30px;
+            margin: 0;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+        }
+
+        .section {
+            background: rgba(20, 20, 20, 0.95);
+            padding: 25px;
+            margin-bottom: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #FFD700;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 8px;
+            color: #FFD700;
+            font-size: 16px;
+            flex: 1;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #FFD700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
+        }
+
+        button {
+            padding: 12px 25px;
+            background: #8B0000;
+            border: none;
+            border-radius: 8px;
+            color: #FFD700;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            background: #FFD700;
+            color: #8B0000;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(139, 0, 0, 0.3);
+        }
+
+        .keys-list {
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .key-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .key-info {
+            flex: 1;
+        }
+
+        .key-value {
+            font-family: monospace;
+            font-size: 16px;
+            color: #4CAF50;
+        }
+
+        .key-status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-left: 15px;
+        }
+
+        .status-active {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .status-used {
+            background: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Panel de Administración</h1>
+
+    <div class="section">
+        <h2>Generar Keys</h2>
+        <div class="input-group">
+            <input type="number" id="quantity" placeholder="Cantidad" min="1" value="1">
+            <input type="number" id="days" placeholder="Días de validez" min="1" value="30">
+            <button id="generateBtn">Generar Keys</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Keys Generadas</h2>
+        <button id="refreshBtn">Actualizar Lista</button>
+        <div id="keysList" class="keys-list"></div>
+    </div>
+
+    <script>
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+            const quantity = document.getElementById('quantity').value;
+            const days = document.getElementById('days').value;
+
+            if (!quantity || !days) {
+                alert('Por favor complete todos los campos');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/admin/generate-keys', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        quantity: parseInt(quantity),
+                        days: parseInt(days)
+                    })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert('Keys generadas exitosamente');
+                    loadKeys();
+                } else {
+                    alert('Error generando keys: ' + data.error);
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        });
+
+        async function loadKeys() {
+            try {
+                const response = await fetch('/api/admin/keys');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const keysList = document.getElementById('keysList');
+                    keysList.innerHTML = '';
+
+                    data.keys.forEach(key => {
+                        const div = document.createElement('div');
+                        div.className = 'key-item';
+                        div.innerHTML = `
+                            <div class="key-info">
+                                <span class="key-value">${key.key}</span>
+                                <span class="days">${key.daysValidity} días</span>
+                                <div class="date-info">
+                                    <small>Creada: ${new Date(key.createdAt).toLocaleDateString()}</small>
+                                    <br>
+                                    <small>Expira: ${new Date(key.expiresAt).toLocaleDateString()}</small>
+                                </div>
+                            </div>
+                            <div>
+                                <span class="key-status ${key.used ? 'status-used' : 'status-active'}">
+                                    ${key.used ? 'Usada' : 'Disponible'}
+                                </span>
+                            </div>
+                        `;
+                        keysList.appendChild(div);
+                    });
+                }
+            } catch (error) {
+                alert('Error cargando keys');
+            }
+        }
+
+        document.getElementById('refreshBtn').addEventListener('click', loadKeys);
+        loadKeys(); // Cargar keys al iniciar
+    </script>
+    </body>
+    </html>

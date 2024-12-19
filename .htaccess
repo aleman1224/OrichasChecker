@@ -1,0 +1,23 @@
+# Proteger archivos sensibles
+<FilesMatch "^\.">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Prevenir listado de directorios
+Options -Indexes
+
+# Forzar HTTPS
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Proteger archivos sensibles
+<Files ~ "^.*\.([Ee][Nn][Vv]|[Ll][Oo][Gg])">
+    Order allow,deny
+    Deny from all
+</Files>
+
+# Redirigir errores
+ErrorDocument 404 /404.html
+ErrorDocument 403 /403.html 

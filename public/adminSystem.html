@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Panel de Control del Sistema</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1a1a1a 0%, #000000 100%);
+            color: #FFD700;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            padding: 30px;
+            margin: 0;
+        }
+
+        .monitor-panel {
+            background: rgba(20, 20, 20, 0.95);
+            padding: 25px;
+            margin-bottom: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        h2 {
+            margin-top: 0;
+            color: #FFD700;
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .status-item {
+            margin: 10px 0;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .control-panel {
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 25px;
+            background: #8B0000;
+            border: none;
+            border-radius: 8px;
+            color: #FFD700;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background: #FFD700;
+            color: #8B0000;
+            transform: translateY(-2px);
+        }
+
+        .error {
+            color: #ff4444;
+        }
+
+        .success {
+            color: #4CAF50;
+        }
+
+        .warning {
+            color: #FFA500;
+        }
+    </style>
+</head>
+<body>
+    <div class="monitor-panel">
+        <h2>Estado del Sistema</h2>
+        <div id="systemStatus"></div>
+    </div>
+
+    <div class="monitor-panel">
+        <h2>Procesos Activos</h2>
+        <div id="activeProcesses"></div>
+    </div>
+
+    <div class="monitor-panel">
+        <h2>Controles de Emergencia</h2>
+        <div class="control-panel">
+            <button onclick="killAllProcesses()">⚠️ Matar Procesos</button>
+            <button onclick="clearCache()">🧹 Limpiar Caché</button>
+            <button onclick="restartSystem()">🔄 Reiniciar Sistema</button>
+            <button onclick="toggleDevTools()" id="devToolsBtn" style="background: #4a90e2;">
+                🛠️ Habilitar DevTools
+            </button>
+        </div>
+    </div>
+
+    <script>
+        async function updateStatus() {
+            try {
+                const response = await fetch('/api/system-status');
+                const data = await response.json();
+                
+                document.getElementById('systemStatus').innerHTML = `
+                    <div class="status-item">
+                        <span>Estado del Checker:</span>
+                        <span class="${data.checkerRunning ? 'success' : 'error'}">
+                            ${data.checkerRunning ? '✅ Activo' : '❌ Inactivo'}
+                        </span>
+                    </div>
+                    <div class="status-item">
+                        <span>Memoria Usada:</span>
+                        <span>${Math.round(data.memory.heapUsed / 1024 / 1024)}MB</span>
+                    </div>
+                    <div class="status-item">
+                        <span>Tiempo Activo:</span>
+                        <span>${Math.round(data.uptime / 3600)}h</span>
+                    </div>
+                    <div class="status-item">
+                        <span>Usuarios Activos:</span>
+                        <span>${data.activeUsers}</span>
+                    </div>
+                    <div class="status-item">
+                        <span>Lives Hoy:</span>
+                        <span class="success">${data.todayLives}</span>
+                    </div>
+                `;
+
+                document.getElementById('activeProcesses').innerHTML = `
+                    <div class="status-item">
+                        <span>Procesos Activos:</span>
+                        <span>${data.activeProcesses}</span>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function killAllProcesses() {
+            if (!confirm('¿Estás seguro de matar todos los procesos?')) return;
+            try {
+                await fetch('/api/system/kill-all', { method: 'POST' });
+                updateStatus();
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function clearCache() {
+            try {
+                await fetch('/api/system/clear-cache', { method: 'POST' });
+                alert('Caché limpiada correctamente');
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function restartSystem() {
+            if (!confirm('¿Estás seguro de reiniciar el sistema?')) return;
+            try {
+                await killAllProcesses();
+                await clearCache();
+                window.location.reload();
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        async function toggleDevTools() {
+            try {
+                // Crear un input oculto para la clave con título
+                const container = document.createElement('div');
+                container.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    padding: 20px;
+                    border-radius: 10px;
+                    background: rgba(20, 20, 30, 0.95);
+                    border: 2px solid #4a90e2;
+                    z-index: 9999;
+                    text-align: center;
+                `;
+                
+                container.innerHTML = `
+                    <h3 style="color: #4a90e2; margin: 0 0 15px 0;">🔐 Ingrese Clave Admin</h3>
+                    <input type="password" id="devToolsPassword" style="
+                        padding: 10px;
+                        border-radius: 5px;
+                        border: 1px solid #4a90e2;
+                        background: rgba(30, 30, 40, 0.95);
+                        color: white;
+                        outline: none;
+                        width: 200px;
+                    ">
+                `;
+                
+                const overlay = document.createElement('div');
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0,0,0,0.8);
+                    z-index: 9998;
+                `;
+                
+                document.body.appendChild(overlay);
+                document.body.appendChild(container);
+                
+                const passwordInput = container.querySelector('#devToolsPassword');
+                passwordInput.focus();
+
+                const result = await new Promise((resolve) => {
+                    passwordInput.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            resolve(this.value);
+                        } else if (e.key === 'Escape') {
+                            resolve(null);
+                        }
+                    });
+                    
+                    overlay.addEventListener('click', () => resolve(null));
+                });
+
+                document.body.removeChild(container);
+                document.body.removeChild(overlay);
+
+                if (!result) return;
+
+                if (result === 'ALEMAN2024') {
+                    const btn = document.getElementById('devToolsBtn');
+                    const isEnabled = btn.textContent.includes('Deshabilitar');
+                    
+                    // Enviar mensaje al frontend con la clave para verificación
+                    window.opener.postMessage({
+                        type: 'toggleDevTools',
+                        enabled: !isEnabled,
+                        adminKey: result  // Enviar la clave para verificación
+                    }, '*');
+                    
+                    btn.textContent = isEnabled ? '🛠️ Habilitar DevTools' : '🛠️ Deshabilitar DevTools';
+                    btn.style.background = isEnabled ? '#4a90e2' : '#ff4444';
+                    
+                    alert(isEnabled ? 'DevTools deshabilitado' : 'DevTools habilitado');
+                } else {
+                    alert('Clave incorrecta');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error al cambiar estado de DevTools');
+            }
+        }
+
+        // Actualizar cada 5 segundos
+        setInterval(updateStatus, 5000);
+        updateStatus();
+    </script>
+</body>
+</html> 

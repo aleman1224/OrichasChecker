@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AlemanChecker Login</title>
+    <link rel="icon" href="/aleman-background.ico" type="image/x-icon">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <style>
+        /* Reset y variables */
+        :root {
+            --gold-color: #FFD700;
+            --dark-red: #8B0000;
+            --transparent-black: rgba(0, 0, 0, 0.3);
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            background: #000;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Container principal */
+        .main-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('./aleman-background.jpg');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            background-color: #000;
+        }
+
+        /* Contenedor de login */
+        .login-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 400px;
+            padding: 20px;
+            background: transparent;
+            border: 1px solid var(--gold-color);
+            border-radius: 10px;
+        }
+
+        /* Tabs de navegación */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            color: var(--gold-color);
+            cursor: pointer;
+            border: 1px solid var(--gold-color);
+            background: var(--transparent-black);
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: var(--dark-red);
+        }
+
+        /* Formularios */
+        .input-group {
+            margin: 15px 0;
+        }
+
+        .input-label {
+            color: var(--gold-color);
+            margin-bottom: 5px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            background: var(--transparent-black);
+            border: 1px solid var(--gold-color);
+            border-radius: 5px;
+            color: var(--gold-color);
+            box-sizing: border-box;
+            transition: all 0.3s ease;
+        }
+
+        input::placeholder {
+            color: rgba(255, 215, 0, 0.5);
+        }
+
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 5px var(--gold-color);
+        }
+
+        /* Botones */
+        button {
+            width: 100%;
+            padding: 10px;
+            background: rgba(139, 0, 0, 0.8);
+            border: 1px solid var(--gold-color);
+            color: var(--gold-color);
+            cursor: pointer;
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 16px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: var(--gold-color);
+            color: var(--dark-red);
+        }
+
+        /* Elementos adicionales */
+        .version {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            color: var(--gold-color);
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .form-section {
+            background: var(--transparent-black);
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: var(--gold-color);
+            cursor: pointer;
+            font-size: 20px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .close-button:hover {
+            color: var(--dark-red);
+            transform: scale(1.1);
+        }
+
+        /* Mensajes de error */
+        .error-message {
+            color: #ff4444;
+            background: rgba(255, 68, 68, 0.1);
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body></body>
+    <div class="main-container">
+        <div class="close-button" onclick="window.close()">✕</div>
+        <div class="login-container">
+            <div class="tabs">
+                <div class="tab active" onclick="showTab('login')">Ingresar</div>
+                <div class="tab" onclick="showTab('register')">Registro</div>
+            </div>
+
+            <div id="login" class="form-section">
+                <div class="input-group">
+                    <div class="input-label">Usuario</div>
+                    <input type="text" id="loginUsername" placeholder="Ingrese su usuario">
+                </div>
+                <div class="input-group">
+                    <div class="input-label">Clave</div>
+                    <input type="password" id="loginPassword" placeholder="Ingrese su clave">
+                </div>
+                <div id="loginError" class="error-message"></div>
+                <button onclick="handleLogin()">INGRESAR</button>
+            </div>
+
+            <div id="register" class="form-section" style="display: none;">
+                <div class="input-group">
+                    <div class="input-label">Key de registro</div>
+                    <input type="text" id="registerKey" placeholder="Ingrese su key">
+                </div>
+                <div class="input-group">
+                    <div class="input-label">Usuario</div>
+                    <input type="text" id="registerUsername" placeholder="Ingrese su usuario">
+                </div>
+                <div class="input-group">
+                    <div class="input-label">Password</div>
+                    <input type="password" id="registerPassword" placeholder="Ingrese su password">
+                </div>
+                <div id="registerError" class="error-message"></div>
+                <button onclick="handleRegister()">REGISTRAR</button>
+            </div>
+        </div>
+        <div class="version">AlemanChecker v3.7.113523</div>
+    </div>
+    <script>
+        function showTab(tab) {
+            const loginSection = document.getElementById('login');
+            const registerSection = document.getElementById('register');
+            const tabs = document.querySelectorAll('.tab');
+            
+            if (tab === 'login') {
+                loginSection.style.display = 'block';
+                registerSection.style.display = 'none';
+                tabs[0].classList.add('active');
+                tabs[1].classList.remove('active');
+            } else {
+                loginSection.style.display = 'none';
+                registerSection.style.display = 'block';
+                tabs[0].classList.remove('active');
+                tabs[1].classList.add('active');
+            }
+        }
+
+        function handleLogin() {
+            const username = document.getElementById('loginUsername').value;
+            const password = document.getElementById('loginPassword').value;
+
+            fetch('/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = '/frontend.html';
+                } else {
+                    alert('Error de login: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error en la conexión');
+            });
+        }
+
+        function handleRegister() {
+    const key = document.getElementById('registerKey').value;
+    const username = document.getElementById('registerUsername').value;
+    const password = document.getElementById('registerPassword').value;
+
+    if (!key || !username || !password) {
+        alert('Por favor complete todos los campos');
+        return;
+    }
+
+    fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key, username, password })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Registro exitoso');
+            window.location.href = '/login.html'; // Redirige al login después del registro
+        } else {
+            alert('Error de registro: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error en la conexión');
+    });
+}
+
+// Protección contra inyección y reverse shell
+(function() {
+    // Anti-debugging y anti-tampering
+    const protectPage = () => {
+        // Prevenir debugging
+        setInterval(() => {
+            const start = performance.now();
+            debugger;
+            const end = performance.now();
+            if (end - start > 100) {
+                window.location.reload();
+            }
+        }, 1000);
+
+        // Prevenir modificaciones del DOM
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList' || mutation.type === 'attributes') {
+                    if (!mutation.target.closest('form')) {
+                        window.location.reload();
+                    }
+                }
+            });
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true,
+            attributes: true
+        });
+    };
+
+    // Sanitización de inputs
+    const sanitizeInput = (input) => {
+        return input.replace(/[<>(){}[\]\\\/]/g, '');
+    };
+
+    // Protección del formulario
+    document.querySelector('form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const username = sanitizeInput(document.getElementById('username').value);
+        const password = document.getElementById('password').value;
+
+        // Encriptar datos antes de enviar
+        const encryptData = (data) => {
+            return btoa(JSON.stringify(data)).split('').reverse().join('');
+        };
+
+        try {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content
+                },
+                body: encryptData({ username, password }),
+                credentials: 'same-origin'
+            });
+
+            if (!response.ok) throw new Error('Error de autenticación');
+            
+            const data = await response.json();
+            if (data.success) {
+                window.location.href = '/frontend.html';
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            document.getElementById('errorMessage').textContent = 'Error de autenticación';
+        }
+    });
+
+    // Prevenir ataques de clickjacking
+    if (window.self !== window.top) {
+        window.top.location = window.self.location;
+    }
+
+    // Iniciar protecciones
+    protectPage();
+})();
+    </script>
+</body>
+</html>
