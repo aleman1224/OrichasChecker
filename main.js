@@ -96,7 +96,7 @@ global.stopSignal = false;
 mongoose.set('strictQuery', false);
 
 try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://alemancheck:ALEMAN1988@cluster0.er1x4.mongodb.net/alemanChecker?retryWrites=true&w=majority&appName=Cluster0';
+    const mongoUri = 'mongodb+srv://alemancheck:ALEMAN1988@cluster0.er1x4.mongodb.net/alemanChecker?retryWrites=true&w=majority&appName=Cluster0';
     console.log('Intentando conectar a MongoDB con URI:', mongoUri);
 
     await mongoose.connect(mongoUri, {
