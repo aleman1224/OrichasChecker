@@ -1,0 +1,5 @@
+[33mb17d2c0[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Configuración optimizada para Render: Node.js 20.x y variables de entorno
+[33m47b2d8c[m Agregados logs adicionales para debugging
+[33mc7109bd[m Preparación para despliegue en Render
+[33mf2ae329[m Movidas importaciones al inicio del archivo
+[33m052e455[m Simplificado main.js con logs detallados

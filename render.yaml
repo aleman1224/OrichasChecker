@@ -4,7 +4,7 @@ services:
     env: node
     runtime: node
     nodeVersion: 20.10.0
-    buildCommand: npm install && npm rebuild
+    buildCommand: npm ci --only=production
     startCommand: node main.js
     envVars:
       - key: NODE_ENV
