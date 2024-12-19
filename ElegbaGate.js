@@ -191,17 +191,18 @@ export class ElegbaGateChecker {
 
     // Métodos de navegación
     async inicializar() {
-        if (global.io) {
-            global.io.emit('update-dashboard', {
-                tipo: 'estado',
-                mensaje: '🚀 Iniciando...',
-                estado: 'running'
-            });
-        }
-        console.log('Iniciando simulador...');
-
         try {
-            this.browser = await puppeteer.launch({
+            console.log('🚀 Iniciando simulador...');
+            
+            if (global.io) {
+                global.io.emit('update-dashboard', {
+                    tipo: 'estado',
+                    mensaje: '🚀 Iniciando...',
+                    estado: 'running'
+                });
+            }
+
+            const launchOptions = {
                 headless: "new",
                 args: [
                     '--no-sandbox',
@@ -212,16 +213,32 @@ export class ElegbaGateChecker {
                     '--window-size=1920,1080',
                     '--incognito'
                 ]
-            });
+            };
+
+            console.log('📦 Configurando opciones de lanzamiento:', JSON.stringify(launchOptions));
+            this.browser = await puppeteer.launch(launchOptions);
+            console.log('🌐 Navegador iniciado correctamente');
 
             const pages = await this.browser.pages();
             this.page = pages[0];
+            console.log('📄 Página principal obtenida');
 
-            await this.page.setDefaultTimeout(15000);
-            await this.page.setDefaultNavigationTimeout(20000);
-            console.log('Simulador iniciado correctamente.');
+            await this.page.setDefaultTimeout(30000); // Aumentamos el timeout a 30 segundos
+            await this.page.setDefaultNavigationTimeout(40000); // Aumentamos el timeout de navegación a 40 segundos
+            
+            console.log('⚙️ Timeouts configurados');
+            console.log('✅ Simulador iniciado correctamente');
+            
+            return true;
         } catch (error) {
-            console.error('Error iniciando el navegador:', error);
+            console.error('❌ Error crítico iniciando el navegador:', error);
+            if (global.io) {
+                global.io.emit('update-dashboard', {
+                    tipo: 'estado',
+                    mensaje: `Error iniciando: ${error.message}`,
+                    estado: 'error'
+                });
+            }
             throw error;
         }
     }

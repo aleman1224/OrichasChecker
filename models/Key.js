@@ -5,38 +5,52 @@ const keySchema = new mongoose.Schema({
     key: {
         type: String,
         required: true,
-        unique: true
+        unique: true,
+        trim: true
     },
-    daysValidity: {
-        type: Number,
-        required: true,
-        default: 30
+    userId: {
+        type: String,
+        required: true
     },
-    used: {
-        type: Boolean,
-        default: false
+    status: {
+        type: String,
+        enum: ['active', 'expired', 'banned'],
+        default: 'active'
+    },
+    validUntil: {
+        type: Date,
+        required: true
     },
     createdAt: {
         type: Date,
         default: Date.now
     },
-    expiresAt: {
+    lastUsed: {
         type: Date,
-        required: true
+        default: null
+    },
+    usageCount: {
+        type: Number,
+        default: 0
     }
 });
 
-// Middleware para calcular expiresAt
-keySchema.pre('save', function(next) {
-    if (!this.expiresAt) {
-        this.expiresAt = new Date(this.createdAt.getTime() + this.daysValidity * 24 * 60 * 60 * 1000);
-    }
-    next();
-});
+// Índices para mejorar el rendimiento
+keySchema.index({ key: 1 }, { unique: true });
+keySchema.index({ userId: 1 });
+keySchema.index({ status: 1 });
+keySchema.index({ validUntil: 1 });
 
-// Método para verificar si la clave es válida
-keySchema.methods.isValid = function() {
-    return !this.used && new Date() <= this.expiresAt;
+// Método para verificar si la key está activa
+keySchema.methods.isActive = function() {
+    return this.status === 'active' && this.validUntil > new Date();
+};
+
+// Método para incrementar el contador de uso
+keySchema.methods.incrementUsage = async function() {
+    this.usageCount += 1;
+    this.lastUsed = new Date();
+    await this.save();
 };
 
 export const Key = mongoose.model('Key', keySchema);

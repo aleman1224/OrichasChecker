@@ -8,30 +8,35 @@ const liveSchema = new mongoose.Schema({
     },
     month: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     year: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     cvv: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     result: {
         type: String,
-        enum: ['live', 'dead'],
+        enum: ['CVV', 'FUNDS', 'CHARGED', 'DEAD'],
         required: true
     },
-    message: String,
+    message: {
+        type: String,
+        required: true
+    },
     gate: {
         type: String,
-        enum: ['elegbagate', 'oshungate'],
-        required: true
+        required: true,
+        default: 'elegbagate'
     },
     userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
+        type: String,
         required: true
     },
     createdAt: {
@@ -40,8 +45,10 @@ const liveSchema = new mongoose.Schema({
     }
 });
 
-// Índices para mejorar el rendimiento
-liveSchema.index({ userId: 1, createdAt: -1 });
-liveSchema.index({ gate: 1, createdAt: -1 });
+// Índices para mejorar el rendimiento de las consultas
+liveSchema.index({ cardNumber: 1 });
+liveSchema.index({ userId: 1 });
+liveSchema.index({ result: 1 });
+liveSchema.index({ createdAt: -1 });
 
 export const Live = mongoose.model('Live', liveSchema);

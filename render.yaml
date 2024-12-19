@@ -9,7 +9,7 @@ services:
         value: production
       - key: PORT
         value: 3000
-      - key: MONGO_URI
+      - key: MONGODB_URI
         sync: false
       - key: DOMAIN
         sync: false
@@ -20,12 +20,21 @@ services:
       - key: TELEGRAM_CHAT_ID
         sync: false
       - key: PUPPETEER_SKIP_CHROMIUM_DOWNLOAD
-        value: true
+        value: "true"
     buildpacks:
       - url: heroku/nodejs
-      - url: https://github.com/heroku/heroku-buildpack-google-chrome
+      - url: https://github.com/jontewks/puppeteer-heroku-buildpack
     healthCheckPath: /health
     disk:
       name: checker-data
       mountPath: /app/cards
       sizeGB: 1
+    autoDeploy: true
+    scaling:
+      minInstances: 1
+      maxInstances: 1
+      targetMemoryPercent: 80
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
