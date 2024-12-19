@@ -23,6 +23,8 @@ import { protect } from './utils.js';
 import compression from 'compression';
 import helmet from 'helmet';
 import cors from 'cors';
+import { scheduleJob } from 'node-schedule';
+import { cleanupCards } from './cleanup-cards.js';
 
 // Cargar variables de entorno
 config();
@@ -72,36 +74,40 @@ let checkerProcess = null; // Para mantener referencia al proceso del checker
 global.checkerActivo = false;
 global.stopSignal = false;
 
-// Ocultar y proteger la conexión MongoDB
-const MONGO_CONFIG = {
-    user: Buffer.from('alemanApp').toString('base64'),
-    pass: Buffer.from('ALEMAN1988').toString('base64'),
-    host: Buffer.from('127.0.0.1').toString('base64'),
-    port: Buffer.from('27017').toString('base64'),
-    db: Buffer.from('alemanChecker').toString('base64')
-};
+// Configuración de MongoDB con manejo de errores mejorado
+mongoose.set('strictQuery', false); // Suprimir la advertencia
 
-// Función para decodificar credenciales
-const getMongoUrl = () => {
-    const decode = str => Buffer.from(str, 'base64').toString();
-    return `mongodb://${decode(MONGO_CONFIG.user)}:${decode(MONGO_CONFIG.pass)}@${decode(MONGO_CONFIG.host)}:${decode(MONGO_CONFIG.port)}/${decode(MONGO_CONFIG.db)}?authSource=${decode(MONGO_CONFIG.db)}`;
-};
-
-// Configuración adicional de MongoDB
-mongoose.connect(getMongoUrl(), {
+mongoose.connect('mongodb://alemanApp:ALEMAN1988@127.0.0.1:27017/alemanChecker?authSource=alemanChecker', {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
+    serverSelectionTimeoutMS: 60000, // Aumentar a 60 segundos
+    socketTimeoutMS: 60000,
+    connectTimeoutMS: 60000,
+    heartbeatFrequencyMS: 2000,
     family: 4,
-    ssl: process.env.NODE_ENV === 'production',
-    sslValidate: process.env.NODE_ENV === 'production',
     retryWrites: true,
-    maxPoolSize: 10
-}).then(() => {
-    logger.success('Conectado a MongoDB');
-}).catch(err => {
-    logger.error('Error conectando a MongoDB:', err);
+    maxPoolSize: 10,
+    keepAlive: true,
+    keepAliveInitialDelay: 300000
+});
+
+// Manejar eventos de conexión
+mongoose.connection.on('connected', () => {
+    logger.success('✅ Conectado a MongoDB');
+});
+
+mongoose.connection.on('error', (err) => {
+    logger.error('❌ Error de MongoDB:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+    logger.error('MongoDB desconectado');
+});
+
+// Manejar errores de proceso
+process.on('SIGINT', async () => {
+    await mongoose.connection.close();
+    process.exit(0);
 });
 
 // Agregar el nuevo gate al objeto de gates disponibles
@@ -274,7 +280,27 @@ app.post('/api/register', async (req, res) => {
 //funcion para iniciar el checker
 app.post('/api/start-checker', async (req, res) => {
     try {
-        // Verificar y reiniciar estado si es necesario
+        // Obtener userId de la sesión
+        if (!req.session.userId) {
+            return res.status(401).json({
+                success: false,
+                message: 'Sesión no válida'
+            });
+        }
+
+        const { gateType } = req.body;
+        const userId = req.session.userId;  // Usar el userId de la sesión
+
+        // Verificar que el usuario existe
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usuario no encontrado'
+            });
+        }
+
+        // Reiniciar estado si es necesario
         if (checkerRunning || checkerInstance) {
             checkerRunning = false;
             checkerInstance = null;
@@ -282,7 +308,6 @@ app.post('/api/start-checker', async (req, res) => {
             global.checkerActivo = false;
         }
 
-        const { gateType, userId } = req.body;
         console.log('Iniciando checker con userId:', userId);
         
         if (gateType === 'elegbagate') {
@@ -294,24 +319,14 @@ app.post('/api/start-checker', async (req, res) => {
             checkerInstance = new OshunGateChecker(userId);
             global.checkerActivo = true;
             checkerRunning = true;
-            checkerProcess = runOshunGate(userId).catch(error => {
-                console.error('Error en OshunGate:', error);
-            });
-        } else {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Tipo de gate no válido' 
-            });
+            checkerProcess = runOshunGate(userId);
         }
 
         res.json({ success: true, message: 'Checker iniciado correctamente' });
         
     } catch (error) {
         console.error('Error al iniciar el checker:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: error.message || 'Error al iniciar el checker' 
-        });
+        res.status(500).json({ success: false, message: error.message });
     }
 });
 
@@ -775,10 +790,63 @@ if (process.env.NODE_ENV === 'production') {
     });
 }
 
-// Modificar la conexión MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    ssl: true,
-    sslValidate: true
+// Programar limpieza cada 2 días a las 00:00
+scheduleJob('0 0 */2 * *', async () => {
+    console.log('Iniciando limpieza programada de archivos...');
+    try {
+        await cleanupCards();
+        console.log('Limpieza completada exitosamente');
+    } catch (error) {
+        console.error('Error en limpieza programada:', error);
+    }
+});
+
+// Endpoint para obtener lives por usuario
+app.get('/api/lives/user/:userId', async (req, res) => {
+    try {
+        const lives = await Live.find({ 
+            userId: req.params.userId 
+        })
+        .sort({ createdAt: -1 })
+        .limit(100);
+
+        res.json({ 
+            success: true, 
+            lives: lives 
+        });
+    } catch (error) {
+        console.error('Error obteniendo lives:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Error obteniendo lives' 
+        });
+    }
+});
+
+// Endpoint para estadísticas
+app.get('/api/lives/stats', async (req, res) => {
+    try {
+        const stats = await Live.aggregate([
+            {
+                $group: {
+                    _id: '$gate',
+                    total: { $sum: 1 },
+                    lastDay: {
+                        $sum: {
+                            $cond: [
+                                { $gte: ['$createdAt', new Date(Date.now() - 24*60*60*1000)] },
+                                1,
+                                0
+                            ]
+                        }
+                    }
+                }
+            }
+        ]);
+
+        res.json({ success: true, stats });
+    } catch (error) {
+        console.error('Error obteniendo estadísticas:', error);
+        res.status(500).json({ success: false });
+    }
 });

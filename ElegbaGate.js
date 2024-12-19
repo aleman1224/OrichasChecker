@@ -8,7 +8,6 @@ import { Live } from './models/Live.js';
 import { fileURLToPath } from 'url';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { protect, CONSTANTS, obfuscateCode } from './utils.js';
 
 const execAsync = promisify(exec);
 
@@ -176,25 +175,17 @@ function generarDatosFalsos() {
 }
 
 export class ElegbaGateChecker {
-    constructor() {
+    constructor(userId) {
+        this.userId = userId;
         this.browser = null;
         this.page = null;
         this.datosFalsos = generarDatosFalsos();
         this.files = {
-            tarjetas: path.join('C:\\Users\\efren\\OneDrive\\Escritorio\\PROYECTOPAGINA\\cards', 'tarjetas.txt'),
-            liveCvv: path.join('C:\\Users\\efren\\OneDrive\\Escritorio\\PROYECTOPAGINA\\cards', 'live_cvv.txt'),
-            liveFunds: path.join('C:\\Users\\efren\\OneDrive\\Escritorio\\PROYECTOPAGINA\\cards', 'live_funds.txt'),
-            liveCharged: path.join('C:\\Users\\efren\\OneDrive\\Escritorio\\PROYECTOPAGINA\\cards', 'live_charged.txt'),
-            dead: path.join('C:\\Users\\efren\\OneDrive\\Escritorio\\PROYECTOPAGINA\\cards', 'dead.txt')
-        };
-        this._urls = CONSTANTS.URLS;
-        this._selectors = CONSTANTS.SELECTORS;
-        this._methods = {
-            process: obfuscateCode(`
-                async function(card) {
-                    // Código sensible aquí
-                }
-            `)
+            tarjetas: path.join(__dirname, 'cards', 'tarjetas.txt'),
+            liveCvv: path.join(__dirname, 'cards', 'live_cvv.txt'),
+            liveFunds: path.join(__dirname, 'cards', 'live_funds.txt'),
+            liveCharged: path.join(__dirname, 'cards', 'live_charged.txt'),
+            dead: path.join(__dirname, 'cards', 'dead.txt')
         };
     }
 
@@ -208,45 +199,42 @@ export class ElegbaGateChecker {
             });
         }
         console.log('Iniciando simulador...');
-        const chromePath = process.env.CHROME_PATH || 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
-        console.log('Usando Chrome en:', chromePath);
-    
-        if (!fs.existsSync(chromePath)) {
-            throw new Error('No se pudo encontrar Chrome instalado. Por favor, instale Google Chrome.');
+
+        try {
+            this.browser = await puppeteer.launch({
+                headless: "new",
+                args: [
+                    '--no-sandbox',
+                    '--disable-setuid-sandbox',
+                    '--disable-dev-shm-usage',
+                    '--disable-accelerated-2d-canvas',
+                    '--disable-gpu',
+                    '--window-size=1920,1080',
+                    '--incognito'
+                ]
+            });
+
+            const pages = await this.browser.pages();
+            this.page = pages[0];
+
+            await this.page.setDefaultTimeout(15000);
+            await this.page.setDefaultNavigationTimeout(20000);
+            console.log('Simulador iniciado correctamente.');
+        } catch (error) {
+            console.error('Error iniciando el navegador:', error);
+            throw error;
         }
-    
-        this.browser = await puppeteer.launch({
-            headless: "new",
-            defaultViewport: null,
-            executablePath: chromePath,
-            timeout: 30000,
-            args: [
-                '--incognito',
-                '--no-sandbox',
-                '--disable-setuid-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-accelerated-2d-canvas',
-                '--disable-gpu'
-            ]
-        });
-    
-        const pages = await this.browser.pages();
-        this.page = pages[0];
-    
-        await this.page.setDefaultTimeout(15000);
-        await this.page.setDefaultNavigationTimeout(20000);
-        console.log('Simulador iniciado correctamente.');
     }
 
     async seleccionarProducto() {
         try {
-            const url = protect.deobfuscate(this._urls.PRODUCT);
-            const sizeSelector = protect.deobfuscateSelector(this._selectors.SIZE);
-            
-            await this.page.goto(url);
-            await this.page.waitForSelector(sizeSelector);
-            await this.page.click(sizeSelector);
-            
+            console.log('🛍️ Navegando a la página del producto...');
+            await this.page.goto('https://www.selfedge.com/index.php?route=product/product&product_id=2626&sort=ps.price&order=ASC', {
+                waitUntil: 'domcontentloaded',
+                timeout: CONFIG.NAVEGACION.PAGINA_CARGA
+            });
+            await this.esperar(CONFIG.NAVEGACION.PAGINA_CARGA);
+
             console.log('👕 Seleccionando talla...');
             await this.page.waitForSelector('label[for="input-option-value9383"]', { timeout: 4000 });
             await this.page.click('label[for="input-option-value9383"]');
@@ -412,7 +400,7 @@ export class ElegbaGateChecker {
 
     async llenarFormularioEnvio() {
         try {
-            console.log('📦 Llenando formulario de Delivery Details...');
+            console.log('�� Llenando formulario de Delivery Details...');
 
             const campos = {
                 'firstname': ['#input-shipping-firstname', this.datosFalsos.firstName],
@@ -435,7 +423,7 @@ export class ElegbaGateChecker {
             console.log(`✅ Estado de envío seleccionado: ${this.datosFalsos.state}`);
             await this.esperar(CONFIG.NAVEGACION.FORM_INPUT);
 
-            console.log('➡️ Haciendo clic en Continue de envío...');
+            console.log('➡�� Haciendo clic en Continue de envío...');
             await this.page.click('#button-guest-shipping');
             await this.esperar(CONFIG.NAVEGACION.CLICK_ESPERA);
 
@@ -571,23 +559,42 @@ export class ElegbaGateChecker {
     }
     
     async cerrar() {
-        if (this.browser) {
-            await this.browser.close();
-            console.log('👋 Navegador cerrado');
-        }
-        if (global.io) {
-            global.io.emit('update-dashboard', {
-                tipo: 'estado',
-                mensaje: '🛑 Deteniendo checker...',
-                estado: 'stopping'
-            });
-        }
-        if (global.io) {
-            global.io.emit('update-dashboard', {
-                tipo: 'estado',
-                mensaje: '🔥 ¡Gate Cargado!',
-                estado: 'stopped'
-            });
+        try {
+            console.log('Intentando cerrar la página y el navegador...');
+            if (this.page) {
+                await this.page.close().catch(() => {});
+                this.page = null;
+                console.log('Página cerrada.');
+            }
+            if (this.browser) {
+                const browserProcess = this.browser.process();
+                await this.browser.close().catch(() => {});
+                if (browserProcess) {
+                    process.kill(browserProcess.pid, 'SIGKILL');
+                }
+                this.browser = null;
+                console.log('Navegador cerrado.');
+            }
+            await execAsync('taskkill /F /IM chrome.exe').catch(() => {});
+            console.log('Procesos de Chrome terminados.');
+
+            if (global.io) {
+                global.io.emit('update-dashboard', {
+                    tipo: 'estado',
+                    mensaje: '🛑 Deteniendo checker...',
+                    estado: 'stopping'
+                });
+            }
+            if (global.io) {
+                global.io.emit('update-dashboard', {
+                    tipo: 'estado',
+                    mensaje: '🔥 ¡Gate Cargado!',
+                    estado: 'stopped'
+                });
+            }
+        } catch (error) {
+            console.error('Error cerrando:', error);
+            await execAsync('taskkill /F /IM chrome.exe').catch(() => {});
         }
     }
 
@@ -698,18 +705,25 @@ export class ElegbaGateChecker {
         const resultado = `[${fecha}] ${tarjeta.numero}|${tarjeta.fecha}|${tarjeta.cvv}|${tarjeta.postalCode} - ${mensaje}\n`;
 
         try {
+            // Guardar en archivos
             switch(tipo) {
                 case 'CVV':
                     await fs.promises.appendFile(this.files.liveCvv, resultado);
                     console.log('💳 Guardado en live_cvv.txt');
+                    // Guardar en MongoDB
+                    await this.guardarEnMongo(tipo, tarjeta, mensaje);
                     break;
                 case 'FUNDS':
                     await fs.promises.appendFile(this.files.liveFunds, resultado);
                     console.log('💰 Guardado en live_funds.txt');
+                    // Guardar en MongoDB
+                    await this.guardarEnMongo(tipo, tarjeta, mensaje);
                     break;
                 case 'CHARGED':
                     await fs.promises.appendFile(this.files.liveCharged, resultado);
                     console.log('✅ Guardado en live_charged.txt');
+                    // Guardar en MongoDB
+                    await this.guardarEnMongo(tipo, tarjeta, mensaje);
                     break;
                 case 'DEAD':
                     await fs.promises.appendFile(this.files.dead, resultado);
@@ -719,6 +733,36 @@ export class ElegbaGateChecker {
             await this.esperar(CONFIG.PAGO.POST_RESPUESTA);
         } catch (error) {
             console.error('Error al guardar resultado:', error);
+        }
+    }
+
+    async guardarEnMongo(tipo, tarjeta, mensaje) {
+        try {
+            const liveEntry = new Live({
+                cardNumber: tarjeta.numero,
+                month: tarjeta.fecha.slice(0,2),
+                year: `20${tarjeta.fecha.slice(2)}`,
+                cvv: tarjeta.cvv,
+                result: tipo,
+                message: mensaje,
+                gate: 'elegbagate',
+                userId: this.userId,
+                createdAt: new Date()
+            });
+
+            await liveEntry.save();
+            console.log('💾 Live guardada en MongoDB:', {
+                card: tarjeta.numero,
+                userId: this.userId,
+                gate: 'elegbagate'
+            });
+
+            // Emitir evento para actualizar contador total
+            if (global.io) {
+                global.io.emit('update-total-lives');
+            }
+        } catch (mongoError) {
+            console.error('Error guardando en MongoDB:', mongoError);
         }
     }
 
@@ -776,7 +820,7 @@ CC: ${tarjeta.numero}|${tarjeta.fecha}|${tarjeta.cvv}
     }
 }
 
-async function main() {
+async function main(userId) {
     console.log('=== Iniciando Proceso de Compra ===');
     let checker = null;
 
@@ -814,7 +858,7 @@ async function main() {
             const tarjetas = await leerTarjetas();
             if (tarjetas.length === 0) break;
 
-            checker = new ElegbaGateChecker();
+            checker = new ElegbaGateChecker(userId);
             
             try {
                 if (!global.stopSignal) {
@@ -890,7 +934,11 @@ async function main() {
                     continue;  // Volver al inicio del ciclo
                 }
             } finally {
-                // El cierre del navegador se maneja en el catch
+                // Asegurar que el navegador se cierre al terminar cada ciclo
+                if (checker && checker.browser) {
+                    await checker.cerrar();
+                    checker = null;
+                }
             }
 
         } catch (error) {
@@ -898,6 +946,19 @@ async function main() {
             console.error('❌ Error en el ciclo principal:', error);
             await new Promise(resolve => setTimeout(resolve, 500));
         }
+    }
+
+    // Asegurar que todo se cierre al finalizar
+    if (checker && checker.browser) {
+        await checker.cerrar();
+        checker = null;
+    }
+
+    // Forzar cierre de cualquier proceso de Chrome restante
+    try {
+        await execAsync('taskkill /F /IM chrome.exe').catch(() => {});
+    } catch (error) {
+        console.error('Error al forzar cierre de Chrome:', error);
     }
 
     console.log('=== ✅ Proceso Completado ===');

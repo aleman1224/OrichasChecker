@@ -1,0 +1,2 @@
+[19/12/2024, 02:33:19] MongoDB desconectado
+[19/12/2024, 02:46:29] MongoDB desconectado

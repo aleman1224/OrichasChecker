@@ -227,23 +227,38 @@
         function handleLogin() {
             const username = document.getElementById('loginUsername').value;
             const password = document.getElementById('loginPassword').value;
+            const errorDiv = document.getElementById('loginError');
+
+            if (!username || !password) {
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = 'Por favor complete todos los campos';
+                return;
+            }
 
             fetch('/api/login', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ username, password }),
+                credentials: 'same-origin'
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    // Guardar userId en sessionStorage
+                    sessionStorage.setItem('userId', data.userId);
                     window.location.href = '/frontend.html';
                 } else {
-                    alert('Error de login: ' + data.message);
+                    errorDiv.style.display = 'block';
+                    errorDiv.textContent = data.message || 'Error de autenticación';
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error en la conexión');
+                errorDiv.style.display = 'block';
+                errorDiv.textContent = 'Error de conexión';
             });
         }
 
@@ -358,6 +373,26 @@
     // Iniciar protecciones
     protectPage();
 })();
+
+// Agregar event listeners
+document.addEventListener('DOMContentLoaded', () => {
+    // Para el formulario de login
+    const loginForm = document.getElementById('login');
+    if (loginForm) {
+        const loginButton = loginForm.querySelector('button');
+        loginButton.onclick = handleLogin;
+    }
+
+    // Para el input de password (permitir Enter)
+    const loginPassword = document.getElementById('loginPassword');
+    if (loginPassword) {
+        loginPassword.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleLogin();
+            }
+        });
+    }
+});
     </script>
 </body>
 </html>

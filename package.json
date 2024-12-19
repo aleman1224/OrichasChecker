@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "start": "node main.js",
-    "build": "echo 'No build required'"
+    "build": "echo 'No build required'",
+    "cleanup": "node cleanup-cards.js"
   },
   "keywords": [],
   "author": "",
@@ -22,7 +23,8 @@
     "compression": "^1.7.4",
     "helmet": "^4.6.0",
     "cors": "^2.8.5",
-    "puppeteer": "^21.0.0"
+    "puppeteer": "^22.8.2",
+    "node-schedule": "^2.1.1"
   },
   "engines": {
     "node": ">=16.0.0"
