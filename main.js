@@ -15,12 +15,16 @@ import OshunGateChecker, { runOshunGate } from './OshunGate.js';
 import healthRouter from './health.js';
 
 async function initializeApp() {
-    console.log('🚀 Iniciando aplicación...');
-
     try {
+        console.log('🚀 Iniciando aplicación...');
+        
         // Cargar variables de entorno
         config();
-        console.log('✅ Variables de entorno cargadas');
+        console.log('✅ Variables de entorno cargadas:', {
+            NODE_ENV: process.env.NODE_ENV,
+            PORT: process.env.PORT,
+            MONGODB_URI: process.env.MONGODB_URI ? 'Configurado' : 'No configurado'
+        });
 
         // Configuración básica
         const __filename = fileURLToPath(import.meta.url);
@@ -45,14 +49,26 @@ async function initializeApp() {
         app.use(express.static(path.join(__dirname, 'public')));
         app.use(healthRouter);
 
-        // Conectar a MongoDB
-        console.log('🔌 Conectando a MongoDB...');
-        await mongoose.connect(MONGODB_URI, {
-            useNewUrlParser: true,
-            useUnifiedTopology: true,
-            serverSelectionTimeoutMS: 5000
+        // Agregar ruta de prueba
+        app.get('/', (req, res) => {
+            res.json({ status: 'ok', message: 'Servidor funcionando correctamente' });
         });
-        console.log('✅ MongoDB conectado exitosamente');
+
+        // Conectar a MongoDB
+        console.log('🔌 Intentando conectar a MongoDB...');
+        console.log('URI de MongoDB:', MONGODB_URI.replace(/:[^:]*@/, ':****@'));
+        
+        try {
+            await mongoose.connect(MONGODB_URI, {
+                useNewUrlParser: true,
+                useUnifiedTopology: true,
+                serverSelectionTimeoutMS: 5000
+            });
+            console.log('✅ MongoDB conectado exitosamente');
+        } catch (mongoError) {
+            console.error('❌ Error conectando a MongoDB:', mongoError);
+            throw mongoError;
+        }
 
         // Configurar Socket.IO
         io.on('connection', (socket) => {
@@ -69,28 +85,55 @@ async function initializeApp() {
             console.log(`🌐 URL del servidor: http://localhost:${PORT}`);
         });
 
+        // Mantener el proceso vivo
+        process.stdin.resume();
+
     } catch (error) {
         console.error('❌ Error fatal:', error);
         logger.error('Error fatal en la inicialización:', error);
+        
+        // Esperar antes de salir para que los logs se envíen
+        await new Promise(resolve => setTimeout(resolve, 1000));
         process.exit(1);
     }
 }
 
 // Manejar errores no capturados
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', async (error) => {
     console.error('❌ Error no capturado:', error);
     logger.error('Error no capturado:', error);
+    
+    // Esperar antes de salir para que los logs se envíen
+    await new Promise(resolve => setTimeout(resolve, 1000));
     process.exit(1);
 });
 
-process.on('unhandledRejection', (error) => {
+process.on('unhandledRejection', async (error) => {
     console.error('❌ Promesa rechazada no manejada:', error);
     logger.error('Promesa rechazada no manejada:', error);
+    
+    // Esperar antes de salir para que los logs se envíen
+    await new Promise(resolve => setTimeout(resolve, 1000));
     process.exit(1);
+});
+
+// Manejar señales de terminación
+process.on('SIGTERM', async () => {
+    console.log('🛑 Recibida señal SIGTERM');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    process.exit(0);
+});
+
+process.on('SIGINT', async () => {
+    console.log('🛑 Recibida señal SIGINT');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    process.exit(0);
 });
 
 // Iniciar la aplicación
-initializeApp().catch(error => {
+console.log('🎬 Iniciando proceso principal...');
+initializeApp().catch(async error => {
     console.error('❌ Error en initializeApp:', error);
+    await new Promise(resolve => setTimeout(resolve, 1000));
     process.exit(1);
 });
