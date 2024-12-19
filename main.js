@@ -29,6 +29,17 @@ import { cleanupCards } from './cleanup-cards.js';
 // Cargar variables de entorno
 config();
 
+// Manejo de errores no capturados
+process.on('uncaughtException', (err) => {
+    console.error('Error no capturado:', err);
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (err) => {
+    console.error('Promesa rechazada no manejada:', err);
+    process.exit(1);
+});
+
 // Logs de depuración para variables de entorno
 console.log('Variables de entorno disponibles:', {
     MONGODB_URI: process.env.MONGODB_URI ? 'Definida' : 'No definida',
@@ -84,25 +95,29 @@ global.stopSignal = false;
 // Configuración de MongoDB con manejo de errores mejorado
 mongoose.set('strictQuery', false);
 
-const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://alemancheck:ALEMAN1988@cluster0.er1x4.mongodb.net/alemanChecker?retryWrites=true&w=majority&appName=Cluster0';
-console.log('Intentando conectar a MongoDB con URI:', mongoUri);
+try {
+    const mongoUri = process.env.MONGODB_URI || 'mongodb+srv://alemancheck:ALEMAN1988@cluster0.er1x4.mongodb.net/alemanChecker?retryWrites=true&w=majority&appName=Cluster0';
+    console.log('Intentando conectar a MongoDB con URI:', mongoUri);
 
-mongoose.connect(mongoUri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    serverSelectionTimeoutMS: 60000,
-    socketTimeoutMS: 60000,
-    connectTimeoutMS: 60000,
-    heartbeatFrequencyMS: 2000,
-    family: 4,
-    retryWrites: true,
-    maxPoolSize: 10,
-    keepAlive: true,
-    keepAliveInitialDelay: 300000
-}).catch(err => {
+    await mongoose.connect(mongoUri, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        serverSelectionTimeoutMS: 60000,
+        socketTimeoutMS: 60000,
+        connectTimeoutMS: 60000,
+        heartbeatFrequencyMS: 2000,
+        family: 4,
+        retryWrites: true,
+        maxPoolSize: 10,
+        keepAlive: true,
+        keepAliveInitialDelay: 300000
+    });
+
+    console.log('Conexión a MongoDB establecida exitosamente');
+} catch (err) {
     console.error('Error al conectar a MongoDB:', err);
     process.exit(1);
-});
+}
 
 // Manejar eventos de conexión
 mongoose.connection.on('connected', () => {
@@ -137,7 +152,7 @@ function actualizarDashboard(tipo, data) {
         mensaje: typeof data === 'string' ? data : JSON.stringify(data)
     };
     
-    console.log('Enviando actualizaci��n:', mensaje);
+    console.log('Enviando actualización:', mensaje);
     io.emit('update-dashboard', mensaje);
 }
 // 1. Primero los middlewares básicos
