@@ -7,7 +7,7 @@ import logger from './logger.js';
 import { fileURLToPath } from 'url';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
-import request from 'request';
+import fetch from 'node-fetch';
 import { ElegbaGateChecker, main } from './ElegbaGate.js';
 import OshunGateChecker, { runOshunGate } from './OshunGate.js';
 import { Live } from './models/Live.js';
@@ -186,9 +186,16 @@ app.get('/', (req, res) => {
 });
 
 // Proxy para binlist
-app.use('/proxy-binlist', (req, res) => {
-    const url = `https://lookup.binlist.net${req.url}`;
-    req.pipe(request(url)).pipe(res);
+app.use('/proxy-binlist', async (req, res) => {
+    try {
+        const url = `https://lookup.binlist.net${req.url}`;
+        const response = await fetch(url);
+        const data = await response.text();
+        res.send(data);
+    } catch (error) {
+        console.error('Error en proxy binlist:', error);
+        res.status(500).send('Error al consultar binlist');
+    }
 });
 
 // Ruta para iniciar sesión
