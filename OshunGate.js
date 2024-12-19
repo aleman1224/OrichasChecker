@@ -1,7 +1,7 @@
 import TelegramBot from 'node-telegram-bot-api';
 import fs from 'fs';
 import path from 'path';
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
 import { faker } from '@faker-js/faker';
 import { Live } from './models/Live.js';
 
@@ -97,7 +97,7 @@ OshunGate
             this.browser = await puppeteer.launch({
                 headless: "new",
                 defaultViewport: null,
-                product: 'firefox',
+                executablePath: process.env.CHROME_BIN || '/usr/bin/google-chrome',
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
