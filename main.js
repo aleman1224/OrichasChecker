@@ -1,31 +1,22 @@
+import express from 'express';
+import mongoose from 'mongoose';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import { config } from 'dotenv';
+import { User } from './models/User.js';
+import { Key } from './models/Key.js';
+import { Live } from './models/Live.js';
+import logger from './logger.js';
+import { protect } from './utils.js';
+import { ElegbaGateChecker, main } from './ElegbaGate.js';
+import OshunGateChecker, { runOshunGate } from './OshunGate.js';
+
 console.log('🚀 Iniciando aplicación...');
 
 try {
-    console.log('1️⃣ Importando módulos básicos...');
-    import express from 'express';
-    import mongoose from 'mongoose';
-    import path from 'path';
-    import { fileURLToPath } from 'url';
-    import { createServer } from 'http';
-    import { Server } from 'socket.io';
-    import { config } from 'dotenv';
-    console.log('✅ Módulos básicos importados');
-
-    console.log('2️⃣ Importando modelos...');
-    import { User } from './models/User.js';
-    import { Key } from './models/Key.js';
-    import { Live } from './models/Live.js';
-    console.log('✅ Modelos importados');
-
-    console.log('3️⃣ Importando utilidades...');
-    import logger from './logger.js';
-    import { protect } from './utils.js';
-    console.log('✅ Utilidades importadas');
-
-    console.log('4️⃣ Importando gates...');
-    import { ElegbaGateChecker, main } from './ElegbaGate.js';
-    import OshunGateChecker, { runOshunGate } from './OshunGate.js';
-    console.log('✅ Gates importados');
+    console.log('✅ Módulos importados correctamente');
 
     // Configuración básica
     config();
