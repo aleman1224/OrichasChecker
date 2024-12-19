@@ -3,8 +3,8 @@ services:
     name: OrishaChecker
     env: node
     runtime: node
-    nodeVersion: 20
-    buildCommand: npm install
+    nodeVersion: 20.10.0
+    buildCommand: npm install && npm rebuild
     startCommand: node main.js
     envVars:
       - key: NODE_ENV
