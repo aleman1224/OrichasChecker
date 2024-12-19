@@ -2,7 +2,7 @@ import TelegramBot from 'node-telegram-bot-api';
 import fs from 'fs';
 import fsPromises from 'fs/promises';
 import path from 'path';
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
 import { faker } from '@faker-js/faker';
 import { Live } from './models/Live.js';
 import { fileURLToPath } from 'url';
