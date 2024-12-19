@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node main.js",
     "dev": "nodemon main.js",
-    "build": "npm cache clean --force && npm ci --only=production --no-optional",
+    "build": "npm install",
     "cleanup": "node cleanup-cards.js",
     "check-deploy": "node check-deploy.js"
   },
@@ -33,6 +33,6 @@
     "socket.io": "^4.7.2"
   },
   "engines": {
-    "node": "20.10.0"
+    "node": "20.x"
   }
 }
