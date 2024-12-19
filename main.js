@@ -53,109 +53,32 @@ if (!process.env.ADMIN_KEY) {
 }
 
 const app = express();
-
-// Configurar sesiones (DEBE IR AQUÍ AL INICIO)
-app.use(session({
-    secret: 'ALEMAN2024',
-    resave: false,
-    saveUninitialized: true,
-    cookie: { 
-        secure: false,
-        maxAge: 24 * 60 * 60 * 1000 // 24 horas
-    }
-}));
-
-const server = createServer(app); // Define el servidor HTTP antes de usarlo
+const server = createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "*",  // Permitir cualquier origen
+        origin: "*",
         methods: ["GET", "POST"]
     },
     transports: ['polling', 'websocket'],
     pingTimeout: 60000,
     pingInterval: 25000,
     cookie: true
-}); 
+});
 
 global.io = io;
-
 const PORT = process.env.PORT || 3000;
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// Configurar todas las rutas y middleware aquí...
+app.use(session({
+    secret: 'ALEMAN2024',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { 
+        secure: false,
+        maxAge: 24 * 60 * 60 * 1000
+    }
+}));
 
-let checkerRunning = false;
-let checkerInstance = null;
-let checkerProcess = null; // Para mantener referencia al proceso del checker
-
-// Al inicio del archivo, después de las importaciones
-global.checkerActivo = false;
-global.stopSignal = false;
-
-// Configuración de MongoDB con manejo de errores mejorado
-mongoose.set('strictQuery', false);
-
-try {
-    const mongoUri = 'mongodb+srv://alemancheck:ALEMAN1988@cluster0.er1x4.mongodb.net/alemanChecker?retryWrites=true&w=majority&appName=Cluster0';
-    console.log('Intentando conectar a MongoDB con URI:', mongoUri);
-
-    await mongoose.connect(mongoUri, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true,
-        serverSelectionTimeoutMS: 60000,
-        socketTimeoutMS: 60000,
-        connectTimeoutMS: 60000,
-        heartbeatFrequencyMS: 2000,
-        family: 4,
-        retryWrites: true,
-        maxPoolSize: 10,
-        keepAlive: true,
-        keepAliveInitialDelay: 300000
-    });
-
-    console.log('Conexión a MongoDB establecida exitosamente');
-} catch (err) {
-    console.error('Error al conectar a MongoDB:', err);
-    process.exit(1);
-}
-
-// Manejar eventos de conexión
-mongoose.connection.on('connected', () => {
-    logger.success('✅ Conectado a MongoDB');
-});
-
-mongoose.connection.on('error', (err) => {
-    logger.error('❌ Error de MongoDB:', err);
-});
-
-mongoose.connection.on('disconnected', () => {
-    logger.error('MongoDB desconectado');
-});
-
-// Manejar errores de proceso
-process.on('SIGINT', async () => {
-    await mongoose.connection.close();
-    process.exit(0);
-});
-
-// Agregar el nuevo gate al objeto de gates disponibles
-const gates = {
-    elegba: ElegbaGateChecker,
-    oshun: OshunGateChecker
-    // ... otros gates existentes
-};
-
-function actualizarDashboard(tipo, data) {
-    const mensaje = {
-        tipo: tipo,
-        data: data,
-        mensaje: typeof data === 'string' ? data : JSON.stringify(data)
-    };
-    
-    console.log('Enviando actualización:', mensaje);
-    io.emit('update-dashboard', mensaje);
-}
-// 1. Primero los middlewares básicos
 app.use(express.json());
 
 // 2. CORS middleware
@@ -884,4 +807,44 @@ app.get('/api/lives/stats', async (req, res) => {
         console.error('Error obteniendo estadísticas:', error);
         res.status(500).json({ success: false });
     }
+});
+
+// Mover la conexión a MongoDB al final y hacerla async
+const startServer = async () => {
+    try {
+        // Conectar a MongoDB
+        const mongoUri = 'mongodb+srv://alemancheck:ALEMAN1988@cluster0.er1x4.mongodb.net/alemanChecker?retryWrites=true&w=majority&appName=Cluster0';
+        console.log('Intentando conectar a MongoDB con URI:', mongoUri);
+
+        await mongoose.connect(mongoUri, {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+            serverSelectionTimeoutMS: 60000,
+            socketTimeoutMS: 60000,
+            connectTimeoutMS: 60000,
+            heartbeatFrequencyMS: 2000,
+            family: 4,
+            retryWrites: true,
+            maxPoolSize: 10,
+            keepAlive: true,
+            keepAliveInitialDelay: 300000
+        });
+
+        console.log('✅ Conexión a MongoDB establecida exitosamente');
+
+        // Iniciar el servidor solo después de conectar a MongoDB
+        server.listen(PORT, () => {
+            console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+        });
+
+    } catch (err) {
+        console.error('❌ Error al iniciar el servidor:', err);
+        process.exit(1);
+    }
+};
+
+// Iniciar el servidor
+startServer().catch(err => {
+    console.error('Error fatal:', err);
+    process.exit(1);
 });
