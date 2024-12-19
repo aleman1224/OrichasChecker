@@ -36,7 +36,6 @@ const keySchema = new mongoose.Schema({
 });
 
 // Índices para mejorar el rendimiento
-keySchema.index({ key: 1 }, { unique: true });
 keySchema.index({ userId: 1 });
 keySchema.index({ status: 1 });
 keySchema.index({ validUntil: 1 });
