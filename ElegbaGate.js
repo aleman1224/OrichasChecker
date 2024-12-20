@@ -204,16 +204,15 @@ export class ElegbaGateChecker {
 
             const launchOptions = {
                 headless: "new",
+                defaultViewport: null,
+                executablePath: process.env.CHROME_BIN || '/usr/bin/google-chrome',
                 args: [
                     '--no-sandbox',
                     '--disable-setuid-sandbox',
                     '--disable-dev-shm-usage',
-                    '--disable-accelerated-2d-canvas',
                     '--disable-gpu',
-                    '--window-size=1920,1080',
-                    '--incognito'
-                ],
-                executablePath: process.env.CHROME_PATH || '/usr/bin/google-chrome'
+                    '--window-size=1366,768'
+                ]
             };
 
             console.log('📦 Configurando opciones de lanzamiento:', JSON.stringify(launchOptions));
@@ -224,8 +223,8 @@ export class ElegbaGateChecker {
             this.page = pages[0];
             console.log('📄 Página principal obtenida');
 
-            await this.page.setDefaultTimeout(30000); // Aumentamos el timeout a 30 segundos
-            await this.page.setDefaultNavigationTimeout(40000); // Aumentamos el timeout de navegación a 40 segundos
+            await this.page.setDefaultTimeout(15000);
+            await this.page.setDefaultNavigationTimeout(20000);
             
             console.log('⚙️ Timeouts configurados');
             console.log('✅ Simulador iniciado correctamente');
