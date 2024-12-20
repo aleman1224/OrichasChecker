@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { sanitizeLogs } from './utils.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,17 +12,33 @@ class Logger {
         this.sessionCountFile = path.join(this.logsPath, 'session_count.json');
         
         // Crear directorio de logs si no existe
-        if (!fs.existsSync(this.logsPath)) {
-            fs.mkdirSync(this.logsPath);
-        }
-
+        this.ensureDirectoryExists(this.logsPath);
+        
         // Inicializar o incrementar contador de sesiones
         this.initSessionCounter();
+        
+        // Configurar rotación de logs
+        this.maxLogSize = 5 * 1024 * 1024; // 5MB
+        this.maxLogFiles = 5;
+        
+        // Iniciar limpieza periódica
+        this.startPeriodicCleanup();
+    }
+
+    ensureDirectoryExists(dir) {
+        if (!fs.existsSync(dir)) {
+            try {
+                fs.mkdirSync(dir, { recursive: true, mode: 0o755 });
+            } catch (error) {
+                console.error(`Error creando directorio ${dir}:`, error);
+                throw error;
+            }
+        }
     }
 
     initSessionCounter() {
         try {
-            let sessionData = { count: 0 };
+            let sessionData = { count: 0, lastCleanup: new Date().toISOString() };
             
             if (fs.existsSync(this.sessionCountFile)) {
                 sessionData = JSON.parse(fs.readFileSync(this.sessionCountFile, 'utf8'));
@@ -30,31 +47,74 @@ class Logger {
                 sessionData.count = 1;
             }
 
-            // Si alcanzamos 2 sesiones, limpiamos logs y reiniciamos contador
-            if (sessionData.count >= 2) {
-                this.clearAllLogs();
-                sessionData.count = 0;
-                this.system('Logs limpiados automáticamente después de 2 sesiones');
-            }
-
-            fs.writeFileSync(this.sessionCountFile, JSON.stringify(sessionData));
+            fs.writeFileSync(this.sessionCountFile, JSON.stringify(sessionData, null, 2));
         } catch (error) {
             console.error('Error manejando contador de sesiones:', error);
         }
     }
 
-    clearAllLogs() {
-        const logFiles = ['checker.txt', 'error.txt', 'system.txt'];
-        logFiles.forEach(file => {
+    startPeriodicCleanup() {
+        setInterval(() => {
             try {
-                const logFile = path.join(this.logsPath, file);
+                this.rotateLogsIfNeeded();
+                this.cleanOldLogs();
+            } catch (error) {
+                console.error('Error en limpieza periódica:', error);
+            }
+        }, 1000 * 60 * 60); // Cada hora
+    }
+
+    rotateLogsIfNeeded() {
+        const logFiles = ['checker.txt', 'error.txt', 'system.txt'];
+        
+        logFiles.forEach(file => {
+            const logFile = path.join(this.logsPath, file);
+            
+            try {
                 if (fs.existsSync(logFile)) {
-                    fs.writeFileSync(logFile, '');
+                    const stats = fs.statSync(logFile);
+                    
+                    if (stats.size > this.maxLogSize) {
+                        // Rotar archivos existentes
+                        for (let i = this.maxLogFiles - 1; i > 0; i--) {
+                            const oldFile = path.join(this.logsPath, `${file}.${i}`);
+                            const newFile = path.join(this.logsPath, `${file}.${i + 1}`);
+                            
+                            if (fs.existsSync(oldFile)) {
+                                fs.renameSync(oldFile, newFile);
+                            }
+                        }
+                        
+                        // Mover el archivo actual
+                        fs.renameSync(logFile, path.join(this.logsPath, `${file}.1`));
+                        
+                        // Crear nuevo archivo
+                        fs.writeFileSync(logFile, '');
+                    }
                 }
             } catch (error) {
-                console.error(`Error limpiando ${file}:`, error);
+                console.error(`Error rotando archivo ${file}:`, error);
             }
         });
+    }
+
+    cleanOldLogs() {
+        try {
+            const files = fs.readdirSync(this.logsPath);
+            const now = new Date();
+            
+            files.forEach(file => {
+                const filePath = path.join(this.logsPath, file);
+                const stats = fs.statSync(filePath);
+                const fileAge = (now - stats.mtime) / (1000 * 60 * 60 * 24); // días
+                
+                if (fileAge > 7 && file.match(/\.\d+$/)) { // Archivos rotados más viejos que 7 días
+                    fs.unlinkSync(filePath);
+                }
+            });
+        } catch (error) {
+            console.error('Error limpiando logs antiguos:', error);
+        }
     }
 
     formatLog(message) {
@@ -68,47 +128,36 @@ class Logger {
             minute: '2-digit',
             second: '2-digit'
         });
-        return `[${timestamp}] ${message}\n`;
+        return `[${timestamp}] ${sanitizeLogs(message)}\n`;
+    }
+
+    writeLog(type, message) {
+        try {
+            const logFile = path.join(this.logsPath, `${type}.txt`);
+            fs.appendFileSync(logFile, this.formatLog(message));
+        } catch (error) {
+            console.error(`Error escribiendo en ${type}.txt:`, error);
+        }
     }
 
     checker(message) {
-        try {
-            const logFile = path.join(this.logsPath, 'checker.txt');
-            if (message.includes('LIVE') || message.includes('DEAD')) {
-                fs.appendFileSync(logFile, this.formatLog(message.trim()));
-            }
-        } catch (error) {
-            this.error('Error al escribir log del checker:', error);
+        if (message.includes('LIVE') || message.includes('DEAD')) {
+            this.writeLog('checker', message.trim());
         }
     }
 
     error(message, error = '') {
-        try {
-            const logFile = path.join(this.logsPath, 'error.txt');
-            const errorMessage = error ? `${message} ${error.stack || error}` : message;
-            fs.appendFileSync(logFile, this.formatLog(errorMessage));
-        } catch (err) {
-            console.error('Error crítico al escribir log de error:', err);
-        }
+        const errorMessage = error ? `${message} ${error.stack || error}` : message;
+        this.writeLog('error', errorMessage);
     }
 
     system(message) {
-        try {
-            const logFile = path.join(this.logsPath, 'system.txt');
-            fs.appendFileSync(logFile, this.formatLog(message));
-        } catch (error) {
-            this.error('Error al escribir log del sistema:', error);
-        }
+        this.writeLog('system', message);
     }
 
     success(message) {
-        try {
-            const logFile = path.join(this.logsPath, 'system.txt');
-            fs.appendFileSync(logFile, this.formatLog(`SUCCESS: ${message}`));
-            console.log(`✅ ${message}`);
-        } catch (error) {
-            this.error('Error al escribir log de éxito:', error);
-        }
+        this.writeLog('system', `SUCCESS: ${message}`);
+        console.log(`✅ ${message}`);
     }
 
     clearLogs(type) {
