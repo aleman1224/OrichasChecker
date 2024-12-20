@@ -1,0 +1,24 @@
+# Directorios
+node_modules
+npm-debug.log
+.git
+.gitignore
+.env
+.env.*
+*.md
+.vscode
+.idea
+*.log
+logs/*
+cards/*
+test
+coverage
+docs
+
+# Archivos específicos
+Dockerfile*
+docker-compose*
+.dockerignore
+.DS_Store
+*.swp
+*.swo 
