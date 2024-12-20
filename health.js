@@ -6,35 +6,28 @@ const router = express.Router();
 router.get('/health', async (req, res) => {
     try {
         // Verificar conexión a MongoDB
-        const isMongoConnected = mongoose.connection.readyState === 1;
+        const mongoStatus = mongoose.connection.readyState === 1;
 
-        if (!isMongoConnected) {
-            return res.status(503).json({
-                status: 'error',
-                message: 'MongoDB no está conectado',
-                details: {
-                    mongodb: false
-                }
-            });
+        // Verificar estado general de la aplicación
+        const status = {
+            timestamp: new Date().toISOString(),
+            service: 'OrishaChecker',
+            mongodb: mongoStatus ? 'connected' : 'disconnected',
+            uptime: process.uptime(),
+            memory: process.memoryUsage(),
+            environment: process.env.NODE_ENV
+        };
+
+        if (mongoStatus) {
+            res.status(200).json({ status: 'healthy', details: status });
+        } else {
+            res.status(503).json({ status: 'unhealthy', details: status });
         }
-
-        // Todo está bien
-        return res.status(200).json({
-            status: 'ok',
-            message: 'El servicio está funcionando correctamente',
-            details: {
-                mongodb: true,
-                timestamp: new Date().toISOString()
-            }
-        });
     } catch (error) {
-        console.error('Error en health check:', error);
-        return res.status(500).json({
-            status: 'error',
-            message: 'Error interno del servidor',
-            details: {
-                error: error.message
-            }
+        res.status(500).json({ 
+            status: 'error', 
+            message: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
         });
     }
 });
